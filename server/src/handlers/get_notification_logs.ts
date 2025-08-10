@@ -1,33 +1,26 @@
+import { db } from '../db';
+import { notificationLogsTable } from '../db/schema';
 import { type NotificationLog } from '../schema';
+import { eq, desc } from 'drizzle-orm';
 
 export const getNotificationLogs = async (memberId: number): Promise<NotificationLog[]> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is:
-    // 1. Fetch all notification logs for a specific member
-    // 2. Used for tracking communication history
-    // 3. Include both successful and failed notifications
-    // 4. Return array of notification log records
-    
-    return Promise.resolve([
-        {
-            id: 1,
-            member_id: memberId,
-            type: 'email',
-            event_type: 'welcome',
-            status: 'sent',
-            message_content: "Welcome to our platform!",
-            sent_at: new Date(),
-            created_at: new Date()
-        },
-        {
-            id: 2,
-            member_id: memberId,
-            type: 'whatsapp',
-            event_type: 'welcome',
-            status: 'sent',
-            message_content: "Welcome! Your account is now active.",
-            sent_at: new Date(),
-            created_at: new Date()
-        }
-    ] as NotificationLog[]);
+  try {
+    // Query notification logs for the specific member, ordered by creation date (newest first)
+    const results = await db.select()
+      .from(notificationLogsTable)
+      .where(eq(notificationLogsTable.member_id, memberId))
+      .orderBy(desc(notificationLogsTable.created_at))
+      .execute();
+
+    // Return the results with proper date handling and structure
+    return results.map(log => ({
+      ...log,
+      // Dates are already Date objects from the database, no conversion needed
+      sent_at: log.sent_at,
+      created_at: log.created_at
+    }));
+  } catch (error) {
+    console.error('Failed to fetch notification logs:', error);
+    throw error;
+  }
 };
